@@ -27,7 +27,28 @@ https://api.open-meteo.com/v1/forecast?latitude=45.41117&longitude=-75.69812&cur
 ## Inicializar proyecto
 
 ```bash
-bun init
+bun install
+bun run start
+```
+
+## Uso
+
+```bash
+bun run start     # ejecutar la aplicación
+bun run test      # ejecutar los tests
+bun run build     # generar el binario ./weather
+./weather         # ejecutar el binario
+```
+
+La configuración se guarda en `$XDG_CONFIG_HOME/weather-cli/config.json`
+(por defecto `~/.config/weather-cli/config.json`). Puedes usar otra ruta con la
+variable de entorno `WEATHER_CLI_CONFIG`.
+
+En macOS, si el binario compilado no arranca, fírmalo ad-hoc después de
+compilar:
+
+```bash
+codesign --force --sign - weather
 ```
 
 ### Ejemplo del menú

@@ -2,35 +2,53 @@
 
 ## Project
 
-Bun + TypeScript weather CLI. The target is a console app that accepts a city,
-fetches current weather from Open-Meteo, and compiles to a standalone
-executable. `index.ts` is the only source file and is still the `bun init`
-placeholder; treat `README.md` (Spanish) as the product spec (default city,
+Bun + TypeScript weather CLI. It accepts a city, fetches current weather from
+Open-Meteo, persists a default city and a saved city list, and compiles to a
+standalone executable. `README.md` (Spanish) is the product spec (default city,
 saved city list, menu mockup).
+
+Layout:
+
+- `index.ts` — entry point: menu loop, option handlers, SIGINT/EOF handling.
+- `src/api.ts` — geocoding and forecast calls, timeouts, `WeatherApiError`.
+- `src/config.ts` — JSON config load/save, validation, corrupt-file backup.
+- `src/format.ts` — temperature conversion, Spanish formatting, weather card
+  and city table.
+- `src/ui.ts` — ANSI colors, menu/settings rendering, readline prompt helpers.
+- `src/weather-codes.ts` — WMO code → Spanish label/icon table.
+- `src/types.ts` — shared `City`, `Config`, `WeatherData` types.
+- `src/*.test.ts` — `bun:test` unit tests.
 
 ## Commands
 
-- Run: `bun run index.ts`
-- Typecheck: `bunx tsc --noEmit` — strict with `noUncheckedIndexedAccess`; Bun
-  does not typecheck when running
-- Test: `bun test` (`bun:test`) — no tests exist yet
-- Build standalone binary: `bun build --compile ./index.ts --outfile weather`
+- Run: `bun run start` (or `bun run index.ts`)
+- Dev with watch: `bun run dev`
+- Typecheck: `bun run typecheck` (`bunx tsc --noEmit`) — strict with
+  `noUncheckedIndexedAccess`; Bun does not typecheck when running
+- Test: `bun run test` (`bun test`)
+- Build standalone binary: `bun run build` (runs `bun build --compile`, then an
+  ad-hoc `codesign` on macOS so the binary launches)
 - Install: `bun install` — `bun.lock` is the lockfile
 
-There are no package.json scripts, lint/formatter config, CI, or pre-commit
-hooks. Use Bun rather than Node/npm; `bun-instructions.md` is the canonical Bun
-API guidance (more docs in `node_modules/bun-types/docs/`).
+Use Bun rather than Node/npm; `bun-instructions.md` is the canonical Bun API
+guidance (more docs in `node_modules/bun-types/docs/`).
 
 ## Conventions
 
 - User-facing strings, prompts, and docs are in Spanish. Match the menu layout
-  in README.
-- Imports may include `.ts` extensions; `verbatimModuleSyntax` requires
-  `import type` for type-only imports.
+  in README (options 1-5, 8, 9; 6 and 7 stay free).
+- Imports include `.ts` extensions; `verbatimModuleSyntax` requires `import type`
+  for type-only imports.
 - Weather lookup is always two calls: geocoding
-  (`geocoding-api.open-meteo.com/v1/search`, use `language=es`) to get lat/lon,
-  then `api.open-meteo.com/v1/forecast`.
-- No persistence or state format exists yet. If adding default-city/city-list
-  storage, establish the format explicitly instead of assuming one.
+  (`geocoding-api.open-meteo.com/v1/search`, `language=es`) to get lat/lon, then
+  `api.open-meteo.com/v1/forecast`. The forecast is always requested in °C and
+  converted locally for °F.
+- Persistence is a single JSON file: `$XDG_CONFIG_HOME/weather-cli/config.json`
+  (default `~/.config/weather-cli/config.json`), overridable with
+  `WEATHER_CLI_CONFIG`. Schema: `{ version: 1, unit, defaultCityId, cities[] }`;
+  the default city is referenced by `id` and also lives in `cities`. Saves are
+  atomic (temp file + rename). Corrupt configs are renamed to `config.json.bak`.
+- Network failures must stay user-facing and Spanish, and must not crash the
+  menu loop.
 - Puedes utilizar `@bun-instructions.md` para obtener informacion de como
   utilizar bun.
