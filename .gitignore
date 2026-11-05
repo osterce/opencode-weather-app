@@ -6,6 +6,7 @@ out
 dist
 *.tgz
 weather
+weather.exe
 
 # code coverage
 coverage

@@ -36,20 +36,31 @@ bun run start
 ```bash
 bun run start     # ejecutar la aplicación
 bun run test      # ejecutar los tests
-bun run build     # generar el binario ./weather
+bun run build     # ejecutar tests y generar el binario ./weather
 ./weather         # ejecutar el binario
 ```
+
+`bun run build` firma el binario ad-hoc automáticamente en macOS. En otros
+sistemas solo compila.
 
 La configuración se guarda en `$XDG_CONFIG_HOME/weather-cli/config.json`
 (por defecto `~/.config/weather-cli/config.json`). Puedes usar otra ruta con la
 variable de entorno `WEATHER_CLI_CONFIG`.
 
-En macOS, si el binario compilado no arranca, fírmalo ad-hoc después de
-compilar:
+## Releases
 
-```bash
-codesign --force --sign - weather
-```
+El workflow `.github/workflows/release.yml` se ejecuta al hacer push a `main`
+cuando cambia `package.json`, o manualmente desde la pestaña Actions. Lee
+`version` de `package.json` y, si el tag `vX.Y.Z` todavía no existe, compila y
+publica un Release con estos binarios:
+
+- `weather-linux-x64`
+- `weather-darwin-arm64`
+- `weather-darwin-x64`
+- `weather-windows-x64.exe`
+
+Para publicar una versión nueva, actualiza `version` en `package.json` y haz push
+a `main`.
 
 ### Ejemplo del menú
 

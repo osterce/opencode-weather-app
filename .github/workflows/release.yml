@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Leer versión
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      should_release: ${{ steps.version.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("node:fs");
+
+            const { version } = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            if (!version) {
+              throw new Error("package.json no tiene el campo version");
+            }
+
+            const tag = `v${version}`;
+            let exists = false;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              exists = true;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            core.setOutput("version", version);
+            core.setOutput("tag", tag);
+            core.setOutput("should_release", String(!exists));
+            core.info(exists ? `El release ${tag} ya existe; se omite.` : `Se publicará ${tag}.`);
+
+  build:
+    name: Compilar ${{ matrix.asset }}
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            outfile: weather-linux-x64
+            asset: weather-linux-x64
+          - os: macos-14
+            target: bun-darwin-arm64
+            outfile: weather-darwin-arm64
+            asset: weather-darwin-arm64
+          - os: macos-14
+            target: bun-darwin-x64
+            outfile: weather-darwin-x64
+            asset: weather-darwin-x64
+          - os: windows-latest
+            target: bun-windows-x64
+            outfile: weather-windows-x64
+            asset: weather-windows-x64.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+        env:
+          BUN_TARGET: ${{ matrix.target }}
+          BUILD_OUTFILE: ${{ matrix.outfile }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: Publicar release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: actions/github-script@v7
+        env:
+          TAG: ${{ needs.version.outputs.tag }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const path = require("node:path");
+
+            const tag = process.env.TAG;
+            const artifactsDir = path.resolve("artifacts");
+            const assets = fs
+              .readdirSync(artifactsDir)
+              .filter((name) => fs.statSync(path.join(artifactsDir, name)).isFile());
+
+            if (assets.length === 0) {
+              throw new Error("No hay artefactos para publicar");
+            }
+
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: tag,
+              generate_release_notes: true,
+            });
+
+            for (const name of assets) {
+              const filePath = path.join(artifactsDir, name);
+              const { size } = fs.statSync(filePath);
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                name,
+                data: fs.readFileSync(filePath),
+                headers: {
+                  "content-type": "application/octet-stream",
+                  "content-length": String(size),
+                },
+              });
+              core.info(`Subido ${name} (${size} bytes)`);
+            }

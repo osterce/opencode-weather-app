@@ -1,12 +1,13 @@
 {
   "name": "02-weather",
+  "version": "1.0.0",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch run src/index.ts",
-    "build": "bun test && bun build --compile ./src/index.ts --outfile weather && (codesign --force --sign - weather 2>/dev/null || true)",
+    "build": "bun run scripts/build.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"
   },
