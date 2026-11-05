@@ -23,6 +23,7 @@ const DAILY_FIELDS = [
   "weather_code",
   "temperature_2m_max",
   "temperature_2m_min",
+  "precipitation_probability_max",
 ].join(",");
 
 export class WeatherApiError extends Error {
@@ -142,6 +143,22 @@ function requireStringArray(
   return value as string[];
 }
 
+function parseNullableNumberArray(
+  data: Record<string, unknown>,
+  key: string,
+  length: number,
+): (number | null)[] {
+  const value = data[key];
+  const result: (number | null)[] = [];
+
+  for (let index = 0; index < length; index += 1) {
+    const item = Array.isArray(value) ? value[index] : undefined;
+    result.push(typeof item === "number" ? item : null);
+  }
+
+  return result;
+}
+
 function parseCurrent(raw: unknown): CurrentWeather {
   if (typeof raw !== "object" || raw === null) {
     throw new WeatherApiError("Los datos actuales del clima están incompletos.");
@@ -170,11 +187,29 @@ function parseDaily(raw: unknown): DailyWeather {
   }
   const data = raw as Record<string, unknown>;
 
+  const time = requireStringArray(data, "time");
+  const weatherCode = requireNumberArray(data, "weather_code");
+  const max = requireNumberArray(data, "temperature_2m_max");
+  const min = requireNumberArray(data, "temperature_2m_min");
+
+  if (
+    weatherCode.length !== time.length ||
+    max.length !== time.length ||
+    min.length !== time.length
+  ) {
+    throw new WeatherApiError("Los datos del clima están incompletos.");
+  }
+
   return {
-    time: requireStringArray(data, "time"),
-    weather_code: requireNumberArray(data, "weather_code"),
-    temperature_2m_max: requireNumberArray(data, "temperature_2m_max"),
-    temperature_2m_min: requireNumberArray(data, "temperature_2m_min"),
+    time,
+    weather_code: weatherCode,
+    temperature_2m_max: max,
+    temperature_2m_min: min,
+    precipitation_probability_max: parseNullableNumberArray(
+      data,
+      "precipitation_probability_max",
+      time.length,
+    ),
   };
 }
 
@@ -184,6 +219,7 @@ export async function fetchWeather(city: City): Promise<WeatherData> {
   url.searchParams.set("longitude", String(city.longitude));
   url.searchParams.set("current", CURRENT_FIELDS);
   url.searchParams.set("daily", DAILY_FIELDS);
+  url.searchParams.set("forecast_days", "7");
   url.searchParams.set("timezone", "auto");
 
   const data = await fetchJson(url.toString());

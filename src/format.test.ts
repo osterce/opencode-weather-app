@@ -1,13 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { stripAnsi } from "./colors.ts";
 import {
+  dayLabel,
   formatCityLabel,
   formatCityTable,
+  formatForecastTable,
+  formatPercent,
   formatTemperature,
+  formatTemperatureRangeCompact,
   formatWeatherCard,
   toDisplayTemperature,
+  toForecastDays,
 } from "./format.ts";
-import type { City, WeatherData } from "./types.ts";
+import type { City, DailyWeather, WeatherData } from "./types.ts";
 
 const city: City = {
   id: 1,
@@ -34,7 +39,24 @@ const data: WeatherData = {
     weather_code: [2],
     temperature_2m_max: [21.4],
     temperature_2m_min: [10.9],
+    precipitation_probability_max: [35],
   },
+};
+
+const forecastDaily: DailyWeather = {
+  time: [
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-07",
+    "2026-11-08",
+    "2026-11-09",
+    "2026-11-10",
+    "2026-11-11",
+  ],
+  weather_code: [1, 3, 61, 61, 95, 95, 61],
+  temperature_2m_max: [15.7, 16.1, 14.3, 14.2, 17.5, 15.7, 14.9],
+  temperature_2m_min: [2.6, 3.1, 8, 7.2, 12.8, 12.6, 9.6],
+  precipitation_probability_max: [0, 3, 35, 64, 100, null, 77],
 };
 
 describe("temperaturas", () => {
@@ -105,5 +127,80 @@ describe("tarjetas", () => {
     expect(table).toContain("17,6 °C");
     expect(table).toContain("✖ sin datos");
     expect(table).toContain("Tiempo de espera agotado");
+  });
+});
+
+describe("pronóstico extendido", () => {
+  test("etiqueta Hoy, Mañana y el resto con día de la semana", () => {
+    expect(dayLabel("2026-11-05", 0)).toBe("Hoy");
+    expect(dayLabel("2026-11-06", 1)).toBe("Mañana");
+    expect(dayLabel("2026-11-07", 2)).toBe("Sáb 7");
+    expect(dayLabel("2026-11-08", 3)).toBe("Dom 8");
+  });
+
+  test("devuelve la fecha tal cual si no se puede interpretar", () => {
+    expect(dayLabel("fecha-invalida", 2)).toBe("fecha-invalida");
+  });
+
+  test("formatea porcentajes y valores nulos", () => {
+    expect(formatPercent(35)).toBe("35 %");
+    expect(formatPercent(null)).toBe("—");
+  });
+
+  test("formatea el rango compacto de temperatura", () => {
+    expect(formatTemperatureRangeCompact(15.7, 2.6, "celsius")).toBe(
+      "15,7 / 2,6 °C",
+    );
+    expect(formatTemperatureRangeCompact(15.7, 2.6, "fahrenheit")).toBe(
+      "60,3 / 36,7 °F",
+    );
+  });
+
+  test("mapea los días disponibles sin inventar filas", () => {
+    const days = toForecastDays(forecastDaily);
+    expect(days).toHaveLength(7);
+    expect(days[0]?.date).toBe("2026-11-05");
+    expect(days[5]?.precipitationProbability).toBeNull();
+
+    const partial = toForecastDays(
+      { ...forecastDaily, time: forecastDaily.time.slice(0, 3) },
+      7,
+    );
+    expect(partial).toHaveLength(3);
+  });
+
+  test("la tabla incluye días, etiqueta corta, temperaturas y lluvia", () => {
+    const table = stripAnsi(formatForecastTable(forecastDaily, "celsius"));
+
+    expect(table).toContain("PRONÓSTICO 7 DÍAS");
+    expect(table).toContain("Hoy");
+    expect(table).toContain("Mañana");
+    expect(table).toContain("Sáb 7");
+    expect(table).toContain("Lluvia");
+    expect(table).toContain("15,7 / 2,6 °C");
+    expect(table).toContain("35 %");
+    expect(table).toContain("—");
+  });
+
+  test("la tabla respeta la unidad configurada", () => {
+    const table = stripAnsi(formatForecastTable(forecastDaily, "fahrenheit"));
+    expect(table).toContain("60,3 / 36,7 °F");
+  });
+
+  test("muestra un aviso si no hay días", () => {
+    const table = stripAnsi(
+      formatForecastTable(
+        {
+          time: [],
+          weather_code: [],
+          temperature_2m_max: [],
+          temperature_2m_min: [],
+          precipitation_probability_max: [],
+        },
+        "celsius",
+      ),
+    );
+
+    expect(table).toContain("Sin pronóstico disponible.");
   });
 });

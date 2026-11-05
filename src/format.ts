@@ -1,7 +1,15 @@
 import { ansi, paint } from "./colors.ts";
-import { FRAME_LINE } from "./layout.ts";
+import { FORECAST_LINE, FRAME_LINE } from "./layout.ts";
 import { getWeatherInfo } from "./weather-codes.ts";
-import type { City, Unit, WeatherData } from "./types.ts";
+import type {
+  City,
+  DailyWeather,
+  ForecastDay,
+  Unit,
+  WeatherData,
+} from "./types.ts";
+
+const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
 
 const oneDecimal = new Intl.NumberFormat("es-ES", {
   minimumFractionDigits: 1,
@@ -37,6 +45,21 @@ export function formatTemperatureRange(
   return `${formatTemperature(max, unit)} / ${formatTemperature(min, unit)}`;
 }
 
+export function formatTemperatureRangeCompact(
+  max: number,
+  min: number,
+  unit: Unit,
+): string {
+  const symbol = unitSymbol(unit);
+  const maxValue = oneDecimal.format(toDisplayTemperature(max, unit));
+  const minValue = oneDecimal.format(toDisplayTemperature(min, unit));
+  return `${maxValue} / ${minValue} ${symbol}`;
+}
+
+export function formatPercent(value: number | null): string {
+  return value === null ? "—" : `${noDecimals.format(value)} %`;
+}
+
 export function formatCityLabel(city: City): string {
   return [city.name, city.admin1, city.country]
     .filter((part): part is string => Boolean(part))
@@ -44,7 +67,7 @@ export function formatCityLabel(city: City): string {
 }
 
 export function formatHumidity(value: number): string {
-  return `${noDecimals.format(value)} %`;
+  return formatPercent(value);
 }
 
 export function formatWind(value: number): string {
@@ -136,5 +159,92 @@ export function formatCityTable(
   }
 
   lines.push(paint(ansi.cyan, FRAME_LINE));
+  return `\n${lines.join("\n")}`;
+}
+
+export function dayLabel(date: string, index: number): string {
+  if (index === 0) return "Hoy";
+  if (index === 1) return "Mañana";
+
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return date;
+
+  const weekday = WEEKDAYS[parsed.getUTCDay()] ?? "";
+  return `${weekday} ${parsed.getUTCDate()}`;
+}
+
+export function toForecastDays(
+  daily: DailyWeather,
+  days: number = 7,
+): ForecastDay[] {
+  const forecast: ForecastDay[] = [];
+  const total = Math.min(days, daily.time.length);
+
+  for (let index = 0; index < total; index += 1) {
+    const date = daily.time[index];
+    const code = daily.weather_code[index];
+    const max = daily.temperature_2m_max[index];
+    const min = daily.temperature_2m_min[index];
+
+    if (
+      date === undefined ||
+      code === undefined ||
+      max === undefined ||
+      min === undefined
+    ) {
+      continue;
+    }
+
+    forecast.push({
+      date,
+      code,
+      max,
+      min,
+      precipitationProbability:
+        daily.precipitation_probability_max[index] ?? null,
+    });
+  }
+
+  return forecast;
+}
+
+export function formatForecastTable(
+  daily: DailyWeather,
+  unit: Unit,
+  days: number = 7,
+): string {
+  const forecast = toForecastDays(daily, days);
+  const lines = [
+    paint(ansi.cyan, FORECAST_LINE),
+    `  ${paint(ansi.bold, `PRONÓSTICO ${forecast.length} DÍAS`)}`,
+    paint(ansi.cyan, FORECAST_LINE),
+  ];
+
+  if (forecast.length === 0) {
+    lines.push("  Sin pronóstico disponible.");
+    lines.push(paint(ansi.cyan, FORECAST_LINE));
+    return `\n${lines.join("\n")}`;
+  }
+
+  lines.push(
+    `  ${"Día".padEnd(8)}${"Clima".padEnd(24)}${"Máx / Mín".padEnd(16)}Lluvia`,
+  );
+
+  forecast.forEach((day, index) => {
+    const info = getWeatherInfo(day.code, 1);
+    const label = info.shortLabel.slice(0, 22).padEnd(24);
+    const dayColumn = dayLabel(day.date, index).padEnd(8);
+    const temperatures = formatTemperatureRangeCompact(
+      day.max,
+      day.min,
+      unit,
+    ).padEnd(16);
+
+    lines.push(
+      `  ${dayColumn}${info.icon} ${label}${temperatures}${formatPercent(day.precipitationProbability)}`,
+    );
+  });
+
+  lines.push(paint(ansi.cyan, FORECAST_LINE));
   return `\n${lines.join("\n")}`;
 }

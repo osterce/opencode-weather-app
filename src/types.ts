@@ -32,6 +32,15 @@ export type DailyWeather = {
   weather_code: number[];
   temperature_2m_max: number[];
   temperature_2m_min: number[];
+  precipitation_probability_max: (number | null)[];
+};
+
+export type ForecastDay = {
+  date: string;
+  code: number;
+  max: number;
+  min: number;
+  precipitationProbability: number | null;
 };
 
 export type WeatherData = {

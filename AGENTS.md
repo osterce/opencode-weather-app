@@ -12,8 +12,8 @@ Layout:
 - `index.ts` — entry point: menu loop, option handlers, SIGINT/EOF handling.
 - `src/api.ts` — geocoding and forecast calls, timeouts, `WeatherApiError`.
 - `src/config.ts` — JSON config load/save, validation, corrupt-file backup.
-- `src/format.ts` — temperature conversion, Spanish formatting, weather card
-  and city table.
+- `src/format.ts` — temperature conversion, Spanish formatting, weather card,
+  city table, and 7-day forecast table (`forecast_days=7`).
 - `src/ui.ts` — ANSI colors, menu/settings rendering, readline prompt helpers.
 - `src/weather-codes.ts` — WMO code → Spanish label/icon table.
 - `src/types.ts` — shared `City`, `Config`, `WeatherData` types.
@@ -41,7 +41,8 @@ guidance (more docs in `node_modules/bun-types/docs/`).
   for type-only imports.
 - Weather lookup is always two calls: geocoding
   (`geocoding-api.open-meteo.com/v1/search`, `language=es`) to get lat/lon, then
-  `api.open-meteo.com/v1/forecast`. The forecast is always requested in °C and
+  `api.open-meteo.com/v1/forecast` (current + daily for 7 days, including
+  `precipitation_probability_max`). The forecast is always requested in °C and
   converted locally for °F.
 - Persistence is a single JSON file: `$XDG_CONFIG_HOME/weather-cli/config.json`
   (default `~/.config/weather-cli/config.json`), overridable with

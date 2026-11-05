@@ -4,6 +4,7 @@ import { ansi, paint } from "./src/colors.ts";
 import {
   formatCityLabel,
   formatCityTable,
+  formatForecastTable,
   formatWeatherCard,
   unitSymbol,
 } from "./src/format.ts";
@@ -165,6 +166,7 @@ async function showDefault(prompt: Prompt, config: Config): Promise<Config> {
   try {
     const data = await fetchWeather(city);
     console.log(formatWeatherCard(city, data, current.unit));
+    console.log(formatForecastTable(data.daily, current.unit));
   } catch (error) {
     printError(errorMessage(error));
     return current;

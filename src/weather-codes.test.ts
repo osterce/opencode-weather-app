@@ -6,6 +6,7 @@ describe("getWeatherInfo", () => {
     for (const code of KNOWN_WEATHER_CODES) {
       const info = getWeatherInfo(code);
       expect(info.label.length).toBeGreaterThan(0);
+      expect(info.shortLabel.length).toBeGreaterThan(0);
       expect(info.icon.length).toBeGreaterThan(0);
     }
   });
@@ -19,6 +20,7 @@ describe("getWeatherInfo", () => {
   test("devuelve un fallback para códigos desconocidos", () => {
     expect(getWeatherInfo(1234)).toEqual({
       label: "Condición desconocida",
+      shortLabel: "Desconocido",
       icon: "❓",
     });
   });

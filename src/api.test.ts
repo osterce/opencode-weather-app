@@ -37,6 +37,7 @@ const forecastPayload = {
     weather_code: [2],
     temperature_2m_max: [21.4],
     temperature_2m_min: [10.9],
+    precipitation_probability_max: [35],
   },
 };
 
@@ -106,6 +107,63 @@ describe("fetchWeather", () => {
     expect(data.current.weather_code).toBe(2);
     expect(data.daily.temperature_2m_max[0]).toBe(21.4);
     expect(data.daily.temperature_2m_min[0]).toBe(10.9);
+    expect(data.daily.precipitation_probability_max[0]).toBe(35);
+  });
+
+  test("acepta probabilidades nulas y rellena las que faltan", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: {
+              ...forecastPayload.daily,
+              precipitation_probability_max: [null],
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const data = await fetchWeather(city);
+    expect(data.daily.precipitation_probability_max).toEqual([null]);
+  });
+
+  test("rellena con null si falta el array de probabilidad", async () => {
+    const { precipitation_probability_max, ...dailyWithoutProbability } =
+      forecastPayload.daily;
+
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: dailyWithoutProbability,
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const data = await fetchWeather(city);
+    expect(data.daily.precipitation_probability_max).toEqual([null]);
+  });
+
+  test("lanza WeatherApiError si los arrays diarios no coinciden", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: {
+              ...forecastPayload.daily,
+              temperature_2m_max: [21.4, 18.1],
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+
+    expect(fetchWeather(city)).rejects.toBeInstanceOf(WeatherApiError);
   });
 
   test("lanza WeatherApiError si faltan datos", async () => {
