@@ -1,8 +1,4 @@
-export type WeatherInfo = {
-  label: string;
-  shortLabel: string;
-  icon: string;
-};
+import type { WeatherInfo } from "../types/Weather.ts";
 
 type Entry = {
   label: string;

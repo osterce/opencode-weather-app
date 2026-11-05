@@ -1,13 +1,12 @@
+import type { City } from "../types/City.ts";
 import type {
-  City,
   CurrentWeather,
   DailyWeather,
   WeatherData,
-} from "./types.ts";
+} from "../types/Weather.ts";
+import { fetchJson, WeatherApiError } from "./client.ts";
 
-const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
-const TIMEOUT_MS = 10_000;
 
 const CURRENT_FIELDS = [
   "temperature_2m",
@@ -25,93 +24,6 @@ const DAILY_FIELDS = [
   "temperature_2m_min",
   "precipitation_probability_max",
 ].join(",");
-
-export class WeatherApiError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "WeatherApiError";
-  }
-}
-
-async function fetchJson(url: string): Promise<unknown> {
-  let response: Response;
-
-  try {
-    response = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.name === "TimeoutError" || error.name === "AbortError")
-    ) {
-      throw new WeatherApiError(
-        "El servicio tardó demasiado en responder. Inténtalo de nuevo.",
-      );
-    }
-    throw new WeatherApiError(
-      "No se pudo conectar con el servicio. Revisa tu conexión a internet.",
-    );
-  }
-
-  if (!response.ok) {
-    throw new WeatherApiError(
-      `El servicio respondió con un error (HTTP ${response.status}).`,
-    );
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    throw new WeatherApiError("El servicio devolvió una respuesta inválida.");
-  }
-}
-
-function parseCity(raw: unknown): City | null {
-  if (typeof raw !== "object" || raw === null) return null;
-  const data = raw as Record<string, unknown>;
-
-  const { id, name, country, latitude, longitude } = data;
-  if (
-    typeof id !== "number" ||
-    typeof name !== "string" ||
-    typeof country !== "string" ||
-    typeof latitude !== "number" ||
-    typeof longitude !== "number"
-  ) {
-    return null;
-  }
-
-  return {
-    id,
-    name,
-    country,
-    latitude,
-    longitude,
-    admin1: typeof data.admin1 === "string" ? data.admin1 : undefined,
-  };
-}
-
-export async function searchCities(query: string, count = 5): Promise<City[]> {
-  const url = new URL(GEOCODING_URL);
-  url.searchParams.set("name", query);
-  url.searchParams.set("count", String(count));
-  url.searchParams.set("language", "es");
-  url.searchParams.set("format", "json");
-
-  const data = await fetchJson(url.toString());
-  if (typeof data !== "object" || data === null) {
-    throw new WeatherApiError("El servicio de búsqueda devolvió datos inválidos.");
-  }
-
-  const results = (data as { results?: unknown }).results;
-  if (!Array.isArray(results)) return [];
-
-  const cities: City[] = [];
-  for (const entry of results) {
-    const city = parseCity(entry);
-    if (city) cities.push(city);
-  }
-  return cities;
-}
 
 function requireNumber(data: Record<string, unknown>, key: string): number {
   const value = data[key];

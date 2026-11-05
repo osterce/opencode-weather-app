@@ -1,20 +1,4 @@
-export type Unit = "celsius" | "fahrenheit";
-
-export type City = {
-  id: number;
-  name: string;
-  admin1?: string;
-  country: string;
-  latitude: number;
-  longitude: number;
-};
-
-export type Config = {
-  version: 1;
-  unit: Unit;
-  defaultCityId: number | null;
-  cities: City[];
-};
+import type { City } from "./City.ts";
 
 export type CurrentWeather = {
   time: string;
@@ -46,4 +30,16 @@ export type ForecastDay = {
 export type WeatherData = {
   current: CurrentWeather;
   daily: DailyWeather;
+};
+
+export type WeatherInfo = {
+  label: string;
+  shortLabel: string;
+  icon: string;
+};
+
+export type CityRow = {
+  city: City;
+  data: WeatherData | null;
+  error: string | null;
 };

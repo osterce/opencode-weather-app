@@ -1,24 +1,31 @@
+import { mkdir, rename, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { mkdir, rename, unlink } from "node:fs/promises";
-import type { City, Config, Unit } from "./types.ts";
+import type { City } from "../types/City.ts";
+import type { Config, LoadConfigResult, Unit } from "../types/Config.ts";
+import {
+  CONFIG_DIR_NAME,
+  CONFIG_FILE_NAME,
+  CONFIG_VERSION,
+  DEFAULT_UNIT,
+} from "../utils/constants.ts";
 
 export function configFilePath(): string {
   const override = process.env.WEATHER_CLI_CONFIG;
   if (override) return override;
 
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
-  return join(base, "weather-cli", "config.json");
+  return join(base, CONFIG_DIR_NAME, CONFIG_FILE_NAME);
 }
 
 export function defaultConfig(): Config {
-  return { version: 1, unit: "celsius", defaultCityId: null, cities: [] };
+  return {
+    version: CONFIG_VERSION,
+    unit: DEFAULT_UNIT,
+    defaultCityId: null,
+    cities: [],
+  };
 }
-
-export type LoadConfigResult = {
-  config: Config;
-  warning?: string;
-};
 
 function isUnit(value: unknown): value is Unit {
   return value === "celsius" || value === "fahrenheit";
@@ -53,7 +60,11 @@ function parseConfig(raw: unknown): Config | null {
   if (typeof raw !== "object" || raw === null) return null;
   const data = raw as Record<string, unknown>;
 
-  if (data.version !== 1 || !isUnit(data.unit) || !Array.isArray(data.cities)) {
+  if (
+    data.version !== CONFIG_VERSION ||
+    !isUnit(data.unit) ||
+    !Array.isArray(data.cities)
+  ) {
     return null;
   }
 
@@ -70,7 +81,7 @@ function parseConfig(raw: unknown): Config | null {
       ? requestedDefault
       : null;
 
-  return { version: 1, unit: data.unit, defaultCityId, cities };
+  return { version: CONFIG_VERSION, unit: data.unit, defaultCityId, cities };
 }
 
 async function backupBrokenConfig(file: string): Promise<void> {
@@ -127,4 +138,8 @@ export async function saveConfig(config: Config): Promise<void> {
       `No se pudo guardar la configuración en ${dir}. Revisa los permisos del directorio.`,
     );
   }
+}
+
+export function setUnit(config: Config, unit: Unit): Config {
+  return { ...config, unit };
 }

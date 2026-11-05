@@ -1,13 +1,14 @@
-import { ansi, paint } from "./colors.ts";
-import { FORECAST_LINE, FRAME_LINE } from "./layout.ts";
-import { getWeatherInfo } from "./weather-codes.ts";
+import type { City } from "../types/City.ts";
+import type { Unit } from "../types/Config.ts";
 import type {
-  City,
+  CityRow,
   DailyWeather,
   ForecastDay,
-  Unit,
   WeatherData,
-} from "./types.ts";
+} from "../types/Weather.ts";
+import { ansi, paint } from "./colors.ts";
+import { FORECAST_LINE, FRAME_LINE } from "./constants.ts";
+import { getWeatherInfo } from "./weatherCodes.ts";
 
 const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
 
@@ -116,12 +117,6 @@ export function formatWeatherCard(
 
   return `\n${lines.join("\n")}`;
 }
-
-export type CityRow = {
-  city: City;
-  data: WeatherData | null;
-  error: string | null;
-};
 
 export function formatCityTable(
   rows: CityRow[],

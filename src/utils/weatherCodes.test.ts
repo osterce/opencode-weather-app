@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getWeatherInfo, KNOWN_WEATHER_CODES } from "./weather-codes.ts";
+import { getWeatherInfo, KNOWN_WEATHER_CODES } from "./weatherCodes.ts";
 
 describe("getWeatherInfo", () => {
   test("todos los códigos conocidos tienen etiqueta e icono", () => {

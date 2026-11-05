@@ -9,19 +9,22 @@ saved city list, menu mockup).
 
 Layout:
 
-- `index.ts` — entry point: menu loop, option handlers, SIGINT/EOF handling.
-- `src/api.ts` — geocoding and forecast calls, timeouts, `WeatherApiError`.
-- `src/config.ts` — JSON config load/save, validation, corrupt-file backup.
-- `src/format.ts` — temperature conversion, Spanish formatting, weather card,
-  city table, and 7-day forecast table (`forecast_days=7`).
-- `src/ui.ts` — ANSI colors, menu/settings rendering, readline prompt helpers.
-- `src/weather-codes.ts` — WMO code → Spanish label/icon table.
-- `src/types.ts` — shared `City`, `Config`, `WeatherData` types.
-- `src/*.test.ts` — `bun:test` unit tests.
+- `src/index.ts` — entry point: config load, prompt, SIGINT/EOF handling.
+- `src/actions/` — user actions: weather, add/remove city, default city,
+  city listing, settings; `helpers.ts` has safe save.
+- `src/presentation/` — menu rendering/dispatch, console output, readline input.
+- `src/storage/` — config file persistence (`settingsStorage.ts`) and pure city
+  list operations (`citiesStorage.ts`).
+- `src/api/` — geocoding and forecast calls, shared HTTP client and
+  `WeatherApiError`.
+- `src/utils/` — formatting, weather card/forecast table, ANSI colors, layout,
+  constants, WMO code table, error helper.
+- `src/types/` — shared `City`, `Config`, `Weather`, menu option types.
+- `src/**/*.test.ts` — `bun:test` unit tests next to their modules.
 
 ## Commands
 
-- Run: `bun run start` (or `bun run index.ts`)
+- Run: `bun run start` (or `bun run src/index.ts`)
 - Dev with watch: `bun run dev`
 - Typecheck: `bun run typecheck` (`bunx tsc --noEmit`) — strict with
   `noUncheckedIndexedAccess`; Bun does not typecheck when running
