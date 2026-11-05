@@ -7,12 +7,17 @@ import {
   formatCityLabel,
   formatCityTable,
   formatForecastTable,
+  formatHumidity,
   formatPercent,
+  formatPrecipitation,
   formatTemperature,
+  formatTemperatureRange,
   formatTemperatureRangeCompact,
   formatWeatherCard,
+  formatWind,
   toDisplayTemperature,
   toForecastDays,
+  unitSymbol,
 } from "../../utils/format.ts";
 
 const city: City = {
@@ -75,6 +80,29 @@ describe("temperaturas", () => {
     expect(formatTemperature(17.6, "celsius")).toBe("17,6 °C");
     expect(formatTemperature(0, "fahrenheit")).toBe("32,0 °F");
   });
+
+  test("expone el símbolo de cada unidad", () => {
+    expect(unitSymbol("celsius")).toBe("°C");
+    expect(unitSymbol("fahrenheit")).toBe("°F");
+  });
+
+  test("formatea rangos completos y compactos", () => {
+    expect(formatTemperatureRange(21.4, 10.9, "celsius")).toBe(
+      "21,4 °C / 10,9 °C",
+    );
+    expect(formatTemperatureRange(21.4, 10.9, "fahrenheit")).toBe(
+      "70,5 °F / 51,6 °F",
+    );
+  });
+});
+
+describe("otras magnitudes", () => {
+  test("formatea humedad, viento y precipitación", () => {
+    expect(formatHumidity(71)).toBe("71 %");
+    expect(formatWind(7.25)).toBe("7,3 km/h");
+    expect(formatPrecipitation(1.5)).toBe("1,5 mm");
+    expect(formatPrecipitation(0.25)).toBe("0,3 mm");
+  });
 });
 
 describe("etiquetas de ciudad", () => {
@@ -105,6 +133,34 @@ describe("tarjetas", () => {
   test("la tarjeta respeta la unidad configurada", () => {
     const card = stripAnsi(formatWeatherCard(city, data, "fahrenheit"));
     expect(card).toContain("63,7 °F");
+  });
+
+  test("la tarjeta muestra — si no hay temperaturas diarias", () => {
+    const card = stripAnsi(
+      formatWeatherCard(
+        city,
+        {
+          ...data,
+          daily: {
+            time: [],
+            weather_code: [],
+            temperature_2m_max: [],
+            temperature_2m_min: [],
+            precipitation_probability_max: [],
+          },
+        },
+        "celsius",
+      ),
+    );
+
+    expect(card).toContain("Máx / Mín hoy:");
+    expect(card).toContain("—");
+  });
+
+  test("la tabla de ciudades funciona sin filas", () => {
+    const table = stripAnsi(formatCityTable([], null, "celsius"));
+
+    expect(table).toContain("CLIMA DE TODAS LAS CIUDADES (0)");
   });
 
   test("la tabla marca la ciudad default y muestra errores por ciudad", () => {
@@ -168,6 +224,16 @@ describe("pronóstico extendido", () => {
       7,
     );
     expect(partial).toHaveLength(3);
+  });
+
+  test("omite días con datos incompletos", () => {
+    const days = toForecastDays({
+      ...forecastDaily,
+      temperature_2m_max: [15.7],
+    });
+
+    expect(days).toHaveLength(1);
+    expect(days[0]?.date).toBe("2026-11-05");
   });
 
   test("la tabla incluye días, etiqueta corta, temperaturas y lluvia", () => {

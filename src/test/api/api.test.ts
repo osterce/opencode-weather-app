@@ -95,6 +95,74 @@ describe("searchCities", () => {
 
     expect(searchCities("Ottawa")).rejects.toBeInstanceOf(WeatherApiError);
   });
+
+  test("envía los parámetros de búsqueda esperados", async () => {
+    let requested = "";
+    mockFetch((url) => {
+      requested = url;
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    });
+
+    await searchCities("Nueva York", 3);
+
+    const params = new URL(requested).searchParams;
+    expect(params.get("name")).toBe("Nueva York");
+    expect(params.get("count")).toBe("3");
+    expect(params.get("language")).toBe("es");
+    expect(params.get("format")).toBe("json");
+  });
+
+  test("filtra resultados inválidos y normaliza admin1", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            results: [
+              {
+                id: 1,
+                name: "Ottawa",
+                admin1: "Ontario",
+                country: "Canadá",
+                latitude: 45.41117,
+                longitude: -75.69812,
+              },
+              null,
+              { id: "malo", name: "Madrid" },
+              {
+                id: 2,
+                name: "Madrid",
+                admin1: 5,
+                country: "España",
+                latitude: 40.4168,
+                longitude: -3.7038,
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const cities = await searchCities("capitales");
+
+    expect(cities).toHaveLength(2);
+    expect(cities[0]?.admin1).toBe("Ontario");
+    expect(cities[1]).toEqual({
+      id: 2,
+      name: "Madrid",
+      admin1: undefined,
+      country: "España",
+      latitude: 40.4168,
+      longitude: -3.7038,
+    });
+  });
+
+  test("lanza WeatherApiError si el servicio devuelve null", async () => {
+    mockFetch(() => new Response("null", { status: 200 }));
+
+    await expect(searchCities("Ottawa")).rejects.toBeInstanceOf(
+      WeatherApiError,
+    );
+  });
 });
 
 describe("fetchWeather", () => {
@@ -177,5 +245,90 @@ describe("fetchWeather", () => {
     );
 
     expect(fetchWeather(city)).rejects.toBeInstanceOf(WeatherApiError);
+  });
+
+  test("envía los parámetros del pronóstico esperados", async () => {
+    let requested = "";
+    mockFetch((url) => {
+      requested = url;
+      return new Response(JSON.stringify(forecastPayload), { status: 200 });
+    });
+
+    await fetchWeather(city);
+
+    const params = new URL(requested).searchParams;
+    expect(params.get("latitude")).toBe("45.41117");
+    expect(params.get("longitude")).toBe("-75.69812");
+    expect(params.get("forecast_days")).toBe("7");
+    expect(params.get("timezone")).toBe("auto");
+    expect(params.get("current")).toContain("temperature_2m");
+    expect(params.get("daily")).toContain("precipitation_probability_max");
+  });
+
+  test("lanza WeatherApiError si un array diario contiene valores inválidos", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: {
+              ...forecastPayload.daily,
+              weather_code: ["2"],
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+
+    await expect(fetchWeather(city)).rejects.toBeInstanceOf(WeatherApiError);
+  });
+
+  test("lanza WeatherApiError si las fechas diarias no son texto", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: { ...forecastPayload.daily, time: [1] },
+          }),
+          { status: 200 },
+        ),
+    );
+
+    await expect(fetchWeather(city)).rejects.toBeInstanceOf(WeatherApiError);
+  });
+
+  test("rellena probabilidades ausentes en el medio del array", async () => {
+    mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            ...forecastPayload,
+            daily: {
+              ...forecastPayload.daily,
+              time: ["2026-11-05", "2026-11-06", "2026-11-07"],
+              weather_code: [1, 2, 3],
+              temperature_2m_max: [15, 16, 17],
+              temperature_2m_min: [5, 6, 7],
+              precipitation_probability_max: [null, 35],
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+
+    const data = await fetchWeather(city);
+
+    expect(data.daily.precipitation_probability_max).toEqual([
+      null,
+      35,
+      null,
+    ]);
+  });
+
+  test("lanza WeatherApiError si el servicio devuelve null", async () => {
+    mockFetch(() => new Response("null", { status: 200 }));
+
+    await expect(fetchWeather(city)).rejects.toBeInstanceOf(WeatherApiError);
   });
 });
