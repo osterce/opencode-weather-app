@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { City } from "../types/City.ts";
-import { WeatherApiError } from "./client.ts";
-import { searchCities } from "./geocoding.ts";
-import { fetchWeather } from "./weather.ts";
+import type { City } from "../../types/City.ts";
+import { WeatherApiError } from "../../api/client.ts";
+import { searchCities } from "../../api/geocoding.ts";
+import { fetchWeather } from "../../api/weather.ts";
 
 const originalFetch = globalThis.fetch;
 

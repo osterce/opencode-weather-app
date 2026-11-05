@@ -20,7 +20,7 @@ Layout:
 - `src/utils/` — formatting, weather card/forecast table, ANSI colors, layout,
   constants, WMO code table, error helper.
 - `src/types/` — shared `City`, `Config`, `Weather`, menu option types.
-- `src/**/*.test.ts` — `bun:test` unit tests next to their modules.
+- `src/test/**/*.test.ts` — `bun:test` unit tests mirroring the `src/` structure.
 
 ## Commands
 

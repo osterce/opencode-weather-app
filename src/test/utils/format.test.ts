@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { City } from "../types/City.ts";
-import type { DailyWeather, WeatherData } from "../types/Weather.ts";
-import { stripAnsi } from "./colors.ts";
+import type { City } from "../../types/City.ts";
+import type { DailyWeather, WeatherData } from "../../types/Weather.ts";
+import { stripAnsi } from "../../utils/colors.ts";
 import {
   dayLabel,
   formatCityLabel,
@@ -13,7 +13,7 @@ import {
   formatWeatherCard,
   toDisplayTemperature,
   toForecastDays,
-} from "./format.ts";
+} from "../../utils/format.ts";
 
 const city: City = {
   id: 1,

@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { City } from "../types/City.ts";
-import type { Config } from "../types/Config.ts";
+import type { City } from "../../types/City.ts";
+import type { Config } from "../../types/Config.ts";
 import {
   addCityToConfig,
   findDefaultCity,
   removeCityFromConfig,
   setDefaultCityInConfig,
-} from "./citiesStorage.ts";
+} from "../../storage/citiesStorage.ts";
 
 const ottawa: City = {
   id: 1,

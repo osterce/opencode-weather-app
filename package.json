@@ -6,7 +6,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch run src/index.ts",
-    "build": "bun build --compile ./src/index.ts --outfile weather && (codesign --force --sign - weather 2>/dev/null || true)",
+    "build": "bun test && bun build --compile ./src/index.ts --outfile weather && (codesign --force --sign - weather 2>/dev/null || true)",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"
   },

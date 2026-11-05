@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Config } from "../types/Config.ts";
-import { defaultConfig, loadConfig, saveConfig } from "./settingsStorage.ts";
+import type { Config } from "../../types/Config.ts";
+import { defaultConfig, loadConfig, saveConfig } from "../../storage/settingsStorage.ts";
 
 let dir: string;
 let file: string;
