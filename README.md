@@ -43,8 +43,8 @@ bun run build     # ejecutar tests y generar el binario ./weather
 `bun run build` firma el binario ad-hoc automáticamente en macOS. En otros
 sistemas solo compila.
 
-La configuración se guarda en `$XDG_CONFIG_HOME/weather-cli/config.json`
-(por defecto `~/.config/weather-cli/config.json`). Puedes usar otra ruta con la
+La configuración se guarda en `$XDG_CONFIG_HOME/weather-cli/config.json` (por
+defecto `~/.config/weather-cli/config.json`). Puedes usar otra ruta con la
 variable de entorno `WEATHER_CLI_CONFIG`.
 
 ## Releases
@@ -59,8 +59,8 @@ publica un Release con estos binarios:
 - `weather-darwin-x64`
 - `weather-windows-x64.exe`
 
-Para publicar una versión nueva, actualiza `version` en `package.json` y haz push
-a `main`.
+Para publicar una versión nueva, actualiza `version` en `package.json` y haz
+push a `main`.
 
 ### Ejemplo del menú
 
@@ -79,4 +79,30 @@ Esta es la apariencia que deseamos crear
   9. Salir
 ════════════════════════════════════════
   Selecciona una opción: 5
+```
+
+### Ejecutar en macOS
+
+macos bloquea binarios descargados de internet con un atributo de cuarentena.
+Para ejecutarlo:
+
+```bash
+chmod +x weather-macos-arm64
+xattr -c weather-macos-arm64
+./weather-macos-arm64
+```
+
+### Ejecutar en Linux
+
+```bash
+chmod +x weather-linux-x64
+./weather-linux-x64
+```
+
+### Ejecutar en Windows
+
+Haz doble clic en 'weather-windows-x64.exe o ejecútalo desde PowerShell:
+
+```powershell
+. \weather-windows-x64.exe
 ```
