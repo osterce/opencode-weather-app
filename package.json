@@ -7,7 +7,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch run src/index.ts",
-    "build": "bun run scripts/build.ts",
+    "build": "bun run test && bun run scripts/build.ts",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"
   },
